@@ -2,8 +2,11 @@ package com.exp;
 
 import org.mule.api.annotations.param.Payload;
 
+import groovy.json.JsonParser;
+
 import java.io.FileNotFoundException;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
@@ -16,62 +19,92 @@ import org.apache.commons.httpclient.HttpException;
 import org.apache.commons.httpclient.methods.PutMethod;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 public class Adapter {
 	
-	private static String ZABBIX_API_URL = "http://localhost/zabbix/api_jsonrpc.php"; // 1.2.3.4 is your zabbix_server_ip
-    public static String deneme(@Payload String input) throws JSONException, FileNotFoundException, UnsupportedEncodingException{
-    	System.out.println(input);
+	private static String auth;
+	private static String response;
+	private static String ZABBIX_API_URL = "http://localhost/zabbix/api_jsonrpc.php"; // http://localhost/zabbix/api_jsonrpc.php URL
+	
+	
+    public static String deneme(@Payload String input) throws JSONException, FileNotFoundException, UnsupportedEncodingException, ParseException{
+    	
+    	/*System.out.println(input);
         Converter converter_obj = new Converter(input); 
         converter_obj.JSONtoXML();
         
+        
+        return converter_obj.getOutput();*/
+    	
         testClient();
-        return converter_obj.getOutput();
+        return null;
     	
     }
     public static InputStream fromString(String str) throws UnsupportedEncodingException {
 		byte[] bytes = str.getBytes("UTF-8");
 		return new ByteArrayInputStream(bytes);
 	}
-    public static void testClient() throws JSONException, FileNotFoundException, UnsupportedEncodingException {
-    	
     
+    public static void testClient() throws JSONException, FileNotFoundException, UnsupportedEncodingException, ParseException {
+    	
 		HttpClient client = new HttpClient();
 		
+		String [] hostarr = new String[1];
+		hostarr[0] = "Zabbix2";
+		
 		PutMethod putMethod = new PutMethod(ZABBIX_API_URL);
-		putMethod.setRequestHeader("Content-Type", "application/json-rpc"); // content-type is controlled in api_jsonrpc.php, so set it like this
-		JSONObject jsonMain=new JSONObject();
-		jsonMain.put("jsonrpc", "2.0");
-		jsonMain.put("method", "user.login");
-		JSONObject jsonMain2=new JSONObject();
-		jsonMain2.put("user", "Admin");
-		jsonMain2.put("password", "zabbix");
-		jsonMain.put("params", jsonMain2);
-		jsonMain.put("id", "1");
+		PutMethod putMethod2 = new PutMethod(ZABBIX_API_URL);
 		
+		//putMethod.setRequestHeader("Content-Type", "application/json-rpc"); // content-type is controlled in api_jsonrpc.php, so set it like this
+		putMethod2.setRequestHeader("Content-Type", "application/json-rpc"); 
 		
-		// create json object for apiinfo.version 
-		//JSONObject jsonObj=new JSONObject("{\"jsonrpc\":\"2.0\",\"method\":\"user.login\",\"params\":{\"user\":\"Admin\",\"password\":\"zabbix\"},\"id\":1}");
+		//putMethod.setRequestBody(fromString(ZabbixMethods.loginUser("Admin", "zabbix").toString())); 
 		
-		putMethod.setRequestBody(fromString(jsonMain.toString())); // put the json object as input stream into request body 
+		JSONObject element = new JSONObject();
+		element.put("type", "1");
+		element.put("main", "1");
+		element.put("useip", "1");
+		element.put("ip", "10.1.90.58");
+		element.put("dns", "");
+		element.put("port", "10050");
+		JSONArray  interfaces = new JSONArray();
+		interfaces.put(element);
 		
-		System.out.println("jsonMainBizyaptık:\n"+jsonMain);
-		
+		JSONObject element2 = new JSONObject();
+		element2.put("groupid", "16");
+		JSONArray group = new JSONArray();
+		group.put(element2);
+		String[] arr = new String[1];
+		arr[0] = "16";
+		putMethod2.setRequestBody(fromString(ZabbixMethods.getHost(arr, "3c4a9b74964439fa8c5252df74b778df").toString())); 
+		//putMethod2.setRequestBody(fromString(ZabbixMethods.createHost("DenemeHost2", interfaces, group, "3c4a9b74964439fa8c5252df74b778df").toString())); 
+		//putMethod2.setRequestBody(fromString(ZabbixMethods.createHostGroup("denemeGroup", "3c4a9b74964439fa8c5252df74b778df").toString())); 
 		String loginResponse = "";
+		String GetResponse = "";
 		
 		try {
-			client.executeMethod(putMethod); // send to request to the zabbix api
+			//client.executeMethod(putMethod);
+			client.executeMethod(putMethod2);// send to request to the zabbix api
 			
-			loginResponse = putMethod.getResponseBodyAsString(); // read the result of the response
+			//loginResponse = putMethod.getResponseBodyAsString(); // read the result of the response
+			GetResponse = putMethod2.getResponseBodyAsString();
 			
-			System.out.println("loginResponse: \n"+loginResponse); // print the result of the response
+			/*JSONObject jsonobj = new JSONObject(loginResponse);
+			auth = (String) jsonobj.get("result");*/
 			
-			/*// Work with the data using methods like...
-			JSONObject obj = new JSONObject(loginResponse); 
-			String id = obj.getString("id");
-			String result = obj.getString("result");
-			System.out.println("id:"+id);
-			System.out.println("result:"+result);*/
+			
+			JSONObject deneme = new JSONObject(GetResponse);
+			response = (String) deneme.get("jsonrpc");
+			
+			
+			//System.out.println("Auth: "  + auth);
+			System.out.println("KKKK: "  + response);
+			//System.out.println("Zabbix server response: \n"+loginResponse); // print the result of the response
+			System.out.println("Zabbix server response get_host: \n"+GetResponse); // print the result of the response
+			
+			
 			
 		} catch (HttpException e) {
 			e.printStackTrace();
@@ -79,5 +112,9 @@ public class Adapter {
 			e.printStackTrace();
 		}		
 	}
-	
+    
+    
+    
+
 }
+	
